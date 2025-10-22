@@ -1,24 +1,25 @@
 CREATE DATABASE PROJECT_SPORTS_TEAM;
 USE PROJECT_SPORTS_TEAM;
 
--- [League Table]
+-- [CREATING TABLES]
+-- [LEAGUE TABLE]
 CREATE TABLE Leagues (league_id INT PRIMARY KEY AUTO_INCREMENT, league_name VARCHAR(100) NOT NULL);
 
--- [Teams Table]
+-- [TEAMS TABLE]
 CREATE TABLE Teams (team_id INT PRIMARY KEY AUTO_INCREMENT, team_name VARCHAR(100) NOT NULL, league_id INT,
     FOREIGN KEY (league_id) REFERENCES Leagues(league_id));
 
--- [Players Table]
+-- [PLAYERS TABLE]
 CREATE TABLE Players (player_id INT PRIMARY KEY AUTO_INCREMENT, player_name VARCHAR(100), age INT, position VARCHAR(50), team_id INT,
     FOREIGN KEY (team_id) REFERENCES Teams(team_id));
 
--- [Matches Table]
+-- [MATCHES TABLE]
 CREATE TABLE Matches (match_id INT PRIMARY KEY AUTO_INCREMENT, league_id INT, match_date DATE, team1_id INT, team2_id INT, winner_team_id INT,
     FOREIGN KEY (league_id) REFERENCES Leagues(league_id),
     FOREIGN KEY (team1_id) REFERENCES Teams(team_id),
     FOREIGN KEY (team2_id) REFERENCES Teams(team_id));
 
--- [Scores Table]
+-- [SCORES TABLE]
 CREATE TABLE Scores (score_id INT PRIMARY KEY AUTO_INCREMENT, match_id INT, team_id INT, goals INT,
     FOREIGN KEY (match_id) REFERENCES Matches(match_id),
     FOREIGN KEY (team_id) REFERENCES Teams(team_id));
@@ -126,29 +127,30 @@ BEGIN
 END //
 DELIMITER ;
 
--- Call it
+-- [CALL IT TO EXECUTE]
 CALL GetPlayerCountByTeam();
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
--- [Indexes for Teams]
+-- [INDEX FOR TEAMS]
 CREATE INDEX idx_teams_league_id ON Teams(league_id);
 
--- [Indexes for Players]
+-- [INDEX FOR PLAYERS]
 CREATE INDEX idx_players_team_id ON Players(team_id);
 
--- [Indexes for Matches]
+-- [INDEX FOR MATCHES]
 CREATE INDEX idx_matches_league_id ON Matches(league_id);
 CREATE INDEX idx_matches_team1_id ON Matches(team1_id);
 CREATE INDEX idx_matches_team2_id ON Matches(team2_id);
 CREATE INDEX idx_matches_match_date ON Matches(match_date);
 
--- [Indexes for Scores]
+-- [INDEX FOR SCORES]
 CREATE INDEX idx_scores_match_id ON Scores(match_id);
 CREATE INDEX idx_scores_team_id ON Scores(team_id);
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
--- WITH() function
-WITH RecentMatchScores AS (
+-- WITH() CTE FUNCTION
+
+WITH cte AS (
     SELECT 
         m.match_id,
         m.match_date,
@@ -159,16 +161,16 @@ WITH RecentMatchScores AS (
     JOIN Scores s ON m.match_id = s.match_id
     WHERE m.match_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) -- last 30 days
 )
-SELECT 
-    rms.match_id,
+ SELECT 
+    cte.match_id,
     t.team_name,
     l.league_name,
-    rms.match_date,
-    rms.goals
-FROM RecentMatchScores rms
-JOIN Teams t ON rms.team_id = t.team_id
+    cte.match_date,
+    cte.goals
+FROM cte
+JOIN Teams t ON cte.team_id = t.team_id
 JOIN Leagues l ON t.league_id = l.league_id
-ORDER BY rms.match_date DESC, rms.goals DESC;
+ORDER BY cte.match_date DESC, cte.goals DESC;
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
